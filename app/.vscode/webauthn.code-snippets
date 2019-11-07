@@ -1,0 +1,243 @@
+{
+  // Place your app workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+  // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+  // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+  // used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+  // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+  // Placeholders with the same ids are connected.
+  // Example:
+  // "Print to console": {
+  // 	"scope": "javascript,typescript",
+  // 	"prefix": "log",
+  // 	"body": [
+  // 		"console.log('$1');",
+  // 		"$2"
+  // 	],
+  // 	"description": "Log output to console"
+  // }
+  "Registration: Create DB Record": {
+    "scope": "javascript",
+    "prefix": "wr0",
+    "body": [
+      "database[login] = {",
+      "registered: false,",
+      "id: utils.randomBase64URLBuffer(),",
+      "authenticators: []",
+      "};",
+      ""
+    ],
+    "description": ""
+  },
+  "Registration: Generate Assertion": {
+    "scope": "javascript",
+    "prefix": "wr1",
+    "body": [
+      "let challengeMakeCred = utils.generateServerMakeCredRequest(login, database[login].id)",
+      "challengeMakeCred.status = 'ok';"
+    ]
+  },
+  "Registration: Setup Session": {
+    "scope": "javascript",
+    "prefix": "wr2",
+    "body": [
+      "ctx.session.challenge = challengeMakeCred.challenge;",
+      "ctx.session.login = login;",
+      "ctx.session.loggedIn = false;"
+    ]
+  },
+  "Registration: Send Assertion to client": {
+    "scope": "javascript",
+    "prefix": "wr3",
+    "body": ["response.body = challengeMakeCred;"]
+  },
+  "Response: Get clientDataJSON": {
+    "scope": "javascript",
+    "prefix": "wv1",
+    "body": [
+      "let webauthnResp = request.body;",
+      "let clientData = JSON.parse(base64url.decode(webauthnResp.response.clientDataJSON));"
+    ]
+  },
+  "Response: Check Challenge": {
+    "prefix": "wv2",
+    "body": [
+      "/* Check challenge... */",
+      "if (clientData.challenge !== ctx.session.challenge) {",
+      "response.body = {",
+      "  'status': 'failed',",
+      "  'message': 'Challenges don\\'t match!'",
+      "};",
+      "response.status = 400;",
+      "}"
+    ],
+    "description": ""
+  },
+  "Response: Check Origin": {
+    "prefix": "wv3",
+    "body": [
+      "/* ...and origin */",
+      "if (clientData.origin !== config.origin) {",
+      "response.body = {",
+      "  'status': 'failed',",
+      "  'message': 'Origins don\\'t match!'",
+      "};",
+      "response.status = 400;",
+      "}"
+    ],
+    "description": ""
+  },
+  "Response: Switch Type": {
+    "prefix": "wv4",
+    "body": [
+      "let result;",
+      "if (webauthnResp.response.attestationObject !== undefined) {",
+      "/* This is create cred */",
+      "} else if (webauthnResp.response.authenticatorData !== undefined) {",
+      "/* This is get assertion */",
+      "} else {",
+      "response.body = {",
+      "  'status': 'failed',",
+      "  'message': 'Can not determine type of response!'",
+      "};",
+      "response.status = 400;",
+      "}",
+      ""
+    ],
+    "description": ""
+  },
+  "Response: Verify Creation A": {
+    "prefix": "wv5a",
+    "body": [
+      "result = utils.verifyAuthenticatorAttestationResponse(webauthnResp);",
+      ""
+    ],
+    "description": ""
+  },
+  "Response: Verify Creation B": {
+    "prefix": "wv5b",
+    "body": [
+      "if (result.verified) {",
+      "  database[ctx.session.login].authenticators.push(result.authrInfo);",
+      "  database[ctx.session.login].registered = true",
+      "}"
+    ],
+    "description": ""
+  },
+  "Response: Verify Authentification": {
+    "prefix": "wv6",
+    "body": [
+      "result = utils.verifyAuthenticatorAssertionResponse(webauthnResp, database[ctx.session.login].authenticators);"
+    ],
+    "description": ""
+  },
+  "Response: Send response": {
+    "prefix": "wv7",
+    "body": [
+      "if (result.verified) {",
+      "ctx.session.loggedIn = true;",
+      "response.body = {",
+      "   status: 'ok',",
+      "   user: { username: ctx.session.login }",
+      "};",
+      "} else {",
+      "response.body = {",
+      "  'status': 'failed',",
+      "  'message': 'Can not authenticate signature!'",
+      "};",
+      "response.status = 400;",
+      "}"
+    ],
+    "description": ""
+  },
+  "Login: Generate Assertion": {
+    "prefix": "wl1",
+    "body": [
+      "let getAssertion = utils.generateServerGetAssertion(database[login].authenticators);",
+      "getAssertion.status = 'ok';"
+    ],
+    "description": ""
+  },
+  "Login: Setup Session": {
+    "scope": "javascript",
+    "prefix": "wl2",
+    "body": [
+      "ctx.session.challenge = getAssertion.challenge;",
+      "ctx.session.login = login;",
+      "ctx.session.loggedIn = false;"
+    ]
+  },
+  "Login: Send Assertion to client": {
+    "scope": "javascript",
+    "prefix": "wl3",
+    "body": ["response.body = getAssertion;"]
+  },
+  "Front Auth: get Challenge": {
+    "prefix": "f1",
+    "body": [
+      "// Get Challenge from server",
+      "const response = await getWebAuthnRegistrationChallenge(userRegistration);",
+    ],
+    "description": ""
+  },
+  "Front Auth: get public key": {
+    "prefix": "f2",
+    "body": [
+      "const publicKey = preformatMakeCredReq(response); // conversion from JSON to \"native\""
+    ],
+    "description": ""
+  },
+  "Front Auth: Ask Webauthn": {
+    "prefix": "f3",
+    "body": [
+      "// Ask Webauthn to respond to the challenge",
+      "const webAuthnResponse = await navigator.credentials.create({",
+      "  publicKey",
+      "});"
+    ],
+    "description": ""
+  },
+  "Front Auth: Check Server acceptation": {
+    "prefix": "f4",
+    "body": [
+      "// Ask Server if Response to Challenge is Accepted",
+      "let makeCredResponse = publicKeyCredentialToJSON(webAuthnResponse); // conversion from \"native\" to JSON",
+      "const registrationResponse = await sendWebAuthnResponse(makeCredResponse);",
+      ""
+    ],
+    "description": ""
+  },
+  "Front Auth: Logged In": {
+    "prefix": "f5",
+    "body": [
+      "// We are loggedIn",
+      "const user = registrationResponse.user;",
+      "setUser(user);",
+      "setIsAuthenticated(true);"
+    ],
+    "description": ""
+  },
+  "Front Login: All": {
+    "prefix": "fl0",
+    "body": [
+        "      // Get Challenge from server",
+        "      const response = await getWebAuthnLoginChallenge(userLogin);",
+        "      console.log(response);",
+        "",
+        "      // Ask Webauthn to respond to the challenge",
+        "      const publicKey = preformatGetAssertReq(response); // conversion from JSON to \"native\"",
+        "      const webAuthnResponse = await navigator.credentials.get({",
+        "        publicKey",
+        "      });",
+        "",
+        "      // Ask Server if Response to Challenge is Accepted",
+        "      let getCredResponse = publicKeyCredentialToJSON(webAuthnResponse); // conversion from \"native\" to JSON",
+        "      const loginResponse = await sendWebAuthnResponse(getCredResponse);",
+        "",
+        "      // We are loggedIn",
+        "      const user = loginResponse.user;",
+        "      setUser(user);",
+        "      setIsAuthenticated(true);"
+    ],
+    "description": ""
+}
+}

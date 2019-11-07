@@ -1,0 +1,544 @@
+<div class="step-by-step">
+    <h1 class="title prez-title">WebAuthn<br/>
+        Le renouveau de l'authentification</h1>
+    <h1 class="title prez-title step">PasswordLess<br/>&nbsp;</h1>
+</div>
+
+---
+
+<h2 class="hidden-title">Mot de passe</h2>
+<div class="imageblock" style=""><img src="images/common_passwords.png" alt="common passwords"></div>
+<aside class="notes">
+    brute force password 8 char upper, lower, numbr, symbol
+    2,5H pour tt parcourir
+    trouvé en 1,5H en moyenne
+    Si schéma classique => instantanné
+</aside>
+
+<!-- <h2 class="title chapter-title">Gestionnaires de MDP <br/>&amp; Credential API</h2> -->
+
+---
+
+<h3 class="hidden-title">Extensions Tierces</h3>
+<div class="row">
+    <div class="column">
+        <img src="images/lastpass.webp" alt="laspast" style="width:100%"/>
+    </div>
+    <div class="column">
+        <img src="images/dashlane.webp" alt="dashlane" style="width:100%"/>
+    </div>
+    <div class="column">
+        <img src="images/bitwarden.png" alt="bitwarden" style="width:100%"/>
+    </div>
+</div>
+
+---
+
+<h3 class="hidden-title">Logiciels</h3>
+<div class="row">
+    <div class="column">
+        <img src="images/keepass.webp" alt="keypass" style="width:100%"/>
+    </div>
+    <div class="column">
+        <img src="images/1password.png" alt="1password" style="width:100%"/>
+    </div>
+</div>
+
+---
+<div class="step-by-step">
+    <h2 class="step title">Credential API</h2>
+    <h2 class="step title">WebAuthn</h2>
+</div>
+<div class="imageblock" style=""><img src="images/sauver_password_chrome.png" style="width:150%;"
+                                      alt="sauver password chrome">
+</div>
+<aside class="notes">
+    et il se trouve que ça existe
+    <ul>
+        <li>Ancêtre (4 avril 2017) de la WebAuthn API</li>
+        <li>Ne gére que PasswordCredentials et FederatedCredentials</li>
+        <li><a href="https://www.w3.org/TR/credential-management-1/">CredentialAPI</a></li>
+    </ul>
+</aside>
+
+---
+
+<h2 class="title">/about</h2>
+
+<script type="application/javascript">
+  function decodeCredential() {
+    console.log(arguments);
+    const videoElement = document.getElementById('video');
+    videoElement.pause();
+    videoElement.style.display = 'none';
+    document.getElementById("profil-card").style.display = 'block';
+  }
+
+  function login() {
+    // Grab elements, create settings, etc.
+    const videoElement = document.getElementById('video');
+    document.getElementById("profil-login").style.display = 'none';
+    document.getElementById("video").style.display = 'block';
+
+// Get access to the camera!
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.enumerateDevices()
+        .then(deviceInfos => {
+          console.log(deviceInfos);
+          const selectedDevice = deviceInfos.find(info => {
+            return info.kind === "videoinput" && info.label === "Microsoft® LifeCam HD-3000 (045e:0810)"
+          });
+          console.log(selectedDevice);
+          return selectedDevice.deviceId
+        }).then(videoSelect => {
+        const constraints = {
+          video: {
+            deviceId: {exact: videoSelect}
+          }
+        };
+        // Not adding `{ audio: true }` since we only want video now
+        return navigator.mediaDevices.getUserMedia(constraints)
+      })
+        .then(stream => {
+          //video.src = window.URL.createObjectURL(stream);
+          videoElement.srcObject = stream;
+          videoElement.play();
+        });
+
+    }
+
+    const cose_alg_ECDSA_w_SHA256 = -7;
+
+    /* The challenge must be produced by the server */
+    let challenge = new Uint8Array([21, 31, 105]);
+    let pubKeyCredParams = [{
+      type: "public-key",
+      alg: cose_alg_ECDSA_w_SHA256
+    }];
+    let rp = {
+      name: "Test Website"
+    };
+    let user = {
+      name: "Thomas Blaisot <t.blaisot@groupeonepoint.com>",
+      displayName: "Thomas Blaisot",
+      id: new TextEncoder("utf-8").encode("t.blaisot@groupeonepoint.com")
+    };
+
+    let publicKey = {challenge, pubKeyCredParams, rp, user};
+    navigator.credentials.create({publicKey})
+      .then(decodeCredential);
+  }
+
+
+</script>
+<div id="profil-login" style="z-index:1;">
+    <div class="card">
+        <p>Please Login to view profil</p>
+        <div>
+            <button onclick="javascript:login()" class="login-button">login</button>
+        </div>
+    </div>
+</div>
+<div id="profil-card" class="card" style="display:none">
+    <div class="hexagon avatar">
+        <div class="hexagon-in1">
+            <div class="hexagon-in2"><img src="images/avatar.png" class="hexagon-img"/></div>
+        </div>
+    </div>
+    <h1 class="me">Thomas Blaisot</h1>
+    <p class="work-title">Lead Tech</p>
+    <div class="onepoint-logo-container"><img src="images/logo-onepoint.png" alt="onepoint" class="onepoint-logo"/>
+    </div>
+    <div class="social-links">
+        <a href="#"><i class="fab fa-github"></i>tblaisot</a>
+        <a href="#"><i class="fab fa-twitter"></i>@t.blaisot</a>
+        <a href="#"><i class="fab fa-linkedin"></i>tblaisot</a>
+    </div>
+</div>
+<video id="video" width="640" height="480" autoplay></video>
+---
+
+<h2 class="title">Authentication vs Authorization</h2>
+<div class="slide-content">
+    <ul class="step-by-step">
+        <li class="step">Authentication = Who you are</li>
+        <li class="step">Authorization = What permissions do you have</li>
+    </ul>
+</div>
+---
+
+<h2 class="title">Authentication Factors</h2>
+<div class="slide-content">
+    <ul class="step-by-step">
+        <li class="step"><span class="factor-number">Factor #1</span>: Something you know</li>
+        <li class="step"><span class="factor-number">Factor #2</span>: Something you have</li>
+        <li class="step"><span class="factor-number">Factor #3</span>: Something you are</li>
+        <li class="step"><span class="factor-number">Factor #4</span>: Somewhere you are</li>
+        <li class="step"><span class="factor-number">Factor #5</span>: Something you do</li>
+    </ul>
+</div>
+<aside class="notes">
+    <ul>
+        <li>Factor #1<p>stored into your memory (password, pin)</li>
+        <li>Factor #2<p>information that you can (physically) carry with you. (phone, usb key, private key)</li>
+        <li>Factor #3<p>Biometrics</li>
+        <li>Factor #4<p>location</li>
+        <li>Factor #5<p>These actions could be things like gestures or touches.</li>
+        <li>SFA, 2FA, MFA: 1,2,N factors from list</li>
+    </ul>
+</aside>
+---
+
+<h2 class="title chapter-title">Password Manager <br/>&amp; Credential API</h2>
+<aside class="notes">
+    on va revenir rapidement sur les précursseurs de la webauth
+</aside>
+---
+
+<h2 class="title">Credential API</h2>
+<div class="imageblock" style=""><img src="images/sauver_password_chrome.png" style="width:150%;"
+                                      alt="sauver password chrome">
+</div>
+<aside class="notes">
+    <ul>
+        <li>Ancêtre (4 avril 2017) de la WebAuthn API</li>
+        <li>Ne gére que PasswordCredentials et FederatedCredentials</li>
+        <li><a href="https://www.w3.org/TR/credential-management-1/">CredentialAPI</a></li>
+    </ul>
+</aside>
+
+---
+
+<h2 class="title chapter-title">Two Factor Authentication (2FA)</h2>
+
+---
+
+<h3 class="title">2FA: SMS</h3>
+<div class="imageblock" style=""><img src="images/sms_second_factor.png" alt="sms second factor"></div>
+<aside class="notes">
+    <ul>
+        <li>Problème de sécurité : GPRS hackable avec tuner tnt</li>
+        <li><a href="https://breakthesecurity.cysecurity.org/category/gprs-hack" class="bare">https://breakthesecurity.cysecurity.org/category/gprs-hack</a>
+        </li>
+        <li><a
+                href="http://www.01net.com/actualites/le-gprs-trop-facile-a-hacker-selon-un-chercheur-allemand-537306.html"
+                class="bare">http://www.01net.com/actualites/le-gprs-trop-facile-a-hacker-selon-un-chercheur-allemand-537306.html</a>
+        </li>
+    </ul>
+</aside>
+
+---
+
+<h3 class="title">2FA: Authenticator</h3>
+<div class="slide-content">
+
+    <h4>One Time Password</h4>
+    <div class="paragraph norme"><p>Based on <strong>IETF RFC 6238</strong></p></div>
+    <div class="ulist step-by-step">
+        <div class="step">
+            <div class="utitle">Applications Android Examples</div>
+            <ul>
+                <li>Google Authenticator</li>
+                <li>Free OTP</li>
+                <li>&#8230;&#8203;</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<aside class="notes">
+    <ul>
+        <li><a href="https://fr.wikipedia.org/wiki/Google_Authenticator" class="bare">https://fr.wikipedia.org/wiki/Google_Authenticator</a>
+        </li>
+    </ul>
+</aside>
+
+---
+
+<h3 class="title">2FA: Custom App</h3>
+<div class="row">
+    <div class="column">
+        <img src="images/battlenet_second_factor.png"
+             alt="battlenet second factor" style="width:100%"/>
+    </div>
+    <div class="column">
+        <img src="images/steam_app_second_factor.jpg"
+             alt="steam app second factor" style="width:100%"/>
+    </div>
+    <div class="column">
+        <div style="width:100%">Banques (Société Générale par exemple)</div>
+    </div>
+</div>
+<aside class="notes">
+    <ul>
+        <li>Même principe que Google Authenticator (génération d&#8217;OTP)</li>
+    </ul>
+</aside>
+
+---
+
+<h3 class="title">2014: FIDO (U2F V1.0)</h3>
+<img src="images/yubikey.png" alt="yubikey" style="width:50%"/>
+<aside class="notes">
+    <ul>
+        <li>FIDO = Fast IDentity Online</li>
+        <li>U2F = Universal 2nd Factor</li>
+        <li>1ère tentative de normalisation</li>
+        <li>Basé sur HID pour interaction avec Matériel</li>
+        <li>FIDO = second facteur seulement</li>
+        <li>La clé Yubikey gére plus de protocoles que simplement FIDO</li>
+    </ul>
+</aside>
+
+---
+
+<h3 class="title">2018: FIDO 2</h3>
+<div class="slide-content">
+    <h4>Web Authentication API (W3C)</h4>
+    <div class="step-by-step">
+        <ul>
+            <li class="step">Password Storage</li>
+            <li class="step">Federated Token Storage</li>
+            <li class="step">PublicKey Authentication</li>
+        </ul>
+    </div>
+</div>
+<aside class="notes">
+    <ul>
+        <li>Décrit la communication avec l’authenticator ansi que le mode d'authent
+            avec le site (challenge etc…​) [CTAP]
+        </li>
+        <li>N’impose pas le fonctionnement de l’authenticator</li>
+        <li>N’impose pas le moyen de comunication avec le site</li>
+        <li>Décoréle le serveur d’auth de l’authenticator</li>
+        <li>Décoréle la vérification de l’utilisateur du protocol d’authent</li>
+        <li>Sépare la donnée d’auth sur l’authenticator seulement</li>
+        <li>Ne s’oppose pas à la fédération d’identitées mais vise l’auth
+            primaire
+        </li>
+        <li>CTAP (client to authenticator protocol est normalisé lui aussi</li>
+    </ul>
+</aside>
+
+---
+
+<h2 class="title chapter-title">PublicKey Authentication</h2>
+
+---
+
+<h3 class="title">Actors</h3>
+<div class="">
+    <img src="images/webauthn_picture.png"
+         alt="" style="width:100%"/>
+</div>
+<aside class="notes">
+    <div class="paragraph"><p>*</p></div>
+</aside>
+
+---
+
+<h4 class="title">Sign In Workflow</h4>
+
+<div class="workflow-animation-container">
+    <object class="workflow-animation-object"
+            id="workflow-animation-object"
+            type="image/svg+xml"
+            data="images/animation1-1.svg"></object>
+</div>
+<div class="credits">Crédits: <a href="https://webauthn.me">https://webauthn.me</a> by <span>Auth0</span></div>
+<script type="application/javascript" src="js/anime.min.js"></script>
+<script type="application/javascript" src="js/workflow-animation.js"></script>
+<script type="application/javascript">
+  const ANIMATION_STEPS = ANIMATION_ORDER_REGISTRATION;
+
+  let svgAnimator;
+  let stepI = 0;
+
+  function nextAnimationStep() {
+    if (stepI < ANIMATION_STEPS.length) {
+      svgAnimator.trigger(ANIMATION_STEPS[stepI]);
+      stepI++;
+    }
+  }
+
+  document.addEventListener("keydown", event => {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        event.stopPropagation();
+        nextAnimationStep();
+        break;
+      default:
+        return;
+    }
+  });
+
+  window.addEventListener("load", async () => {
+    svgAnimator = new SvgAnimator(
+      document.getElementById('workflow-animation-object')
+        .contentDocument
+        .getElementById('svg-workflow'));
+  });
+</script>
+
+---
+<h2 class="title">Informations to store on server</h2>
+<div class="slide-content">
+    <ul class="step-by-step">
+        <li class="step">username</li>
+        <li style="list-style-type: none">
+            <ul>
+                <li class="step">credentialId (rawId)</li>
+                <li class="step">publicKey</li>
+            </ul>
+            <span class="step">for each authenticator</span>
+        </li>
+    </ul>
+
+</div>
+<aside class="notes">
+    <h1>username</h1>
+    pour retrouver l'information
+    <h1>credentialId</h1>
+    potentiellement plusieurs, ils doivent être indiqué à l'authenticator pour le login
+    <h1>publicKey</h1>
+    pour valider la réponse (1 par authenticator)
+</aside>
+
+---
+
+<h3 class="title chapter-title">Log In</h3>
+
+---
+
+<h4 class="title">Workflow Log In</h4>
+<div class="workflow-animation-container">
+    <object class="workflow-animation-object"
+            id="workflow-animation-object"
+            type="image/svg+xml"
+            data="images/animation1-1.svg"></object>
+</div>
+<div class="credits">Crédits: <a href="https://webauthn.me">https://webauthn.me</a> by <span>Auth0</span></div>
+
+<script type="application/javascript" src="js/anime.min.js"></script>
+<script type="application/javascript" src="js/workflow-animation.js"></script>
+<script type="application/javascript">
+  const ANIMATION_STEPS = ANIMATION_ORDER_LOGIN;
+
+  let svgAnimator;
+  let stepI = 0;
+
+  function nextAnimationStep() {
+    if (stepI < ANIMATION_STEPS.length) {
+      svgAnimator.trigger(ANIMATION_STEPS[stepI]);
+      stepI++;
+    }
+  }
+
+  document.addEventListener("keydown", event => {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        event.stopPropagation();
+        nextAnimationStep();
+        break;
+      default:
+        return;
+    }
+  });
+
+  window.addEventListener("load", async () => {
+    svgAnimator = new SvgAnimator(
+      document.getElementById('workflow-animation-object')
+        .contentDocument
+        .getElementById('svg-workflow'));
+  });
+</script>
+---
+
+<h2 class="title chapter-title">Code</h2>
+
+---
+
+<h2 class="title">Authenticator Choice</h2>
+<div class="slide-content">
+    <ul class="step-by-step">
+        <li class="step">Platform Authenticators</li>
+        <li class="step">Roaming Authenticators</li>
+        <li class="step">Software Authenticators</li>
+    </ul>
+</div>
+<aside class="notes">
+    <h1>Platform Authenticators</h1>
+    Built into the Computer/Phone
+    Windows Hello, Android etc...
+    Demo android
+
+    <h1>Roaming Authenticators</h1>
+    Biometrics with TPM or TEE/secure enclave
+    Fingerprint Reader
+    Face/Iris/Voice Recognition
+    PIN/pattern/passphrase with TPM or TEE/secure enclave
+    Security Keys
+
+    <h1>Software Authenticators</h1>
+    Touch sensor with secure element
+    PIN and touch sensor with secure element
+</aside>
+
+---
+
+<h2 class="title chapter-title">Conclusion</h2>
+
+---
+
+<h2 class="title chapter-title">Ready to implement ?</h2>
+<aside class="notes">
+    la question que tout le monde se pose
+</aside>
+
+---
+
+<h2 class="title">Browser and Systems Compatibility</h2>
+<img width="100%" src="images/compatibility.png" alt="compatibility table"/>
+<div class="footer-browser-status-container">
+    <div class="footer-browser-status-text-container">
+        <p>Web Authentication is only partially included in Chrome 67, Firefox 60, and Edge build 17723 or newer
+            versions.</p>
+        <p>Web Authentication has started to appear in the technical preview of Safari starting in 12/2018</p>
+    </div>
+</div>
+<aside class="notes">
+    Android décroche la certification FIDO2 pour l’authentification sans mot de passe
+</aside>
+
+---
+
+<h2 class="title">Legacy Compatibility</h2>
+<div class="slide-content">
+    <ul class="step-by-step">
+        <li class="step">Isolate the authentication from all your application</li>
+        <li class="step">Password Fallback</li>
+        <li class="step">Use a lib for the Backend !!!</li>
+    </ul>
+</div>
+
+<aside class="notes">
+    Tout le monde n'est pas équipé
+    Séparer le login de tout le reste de la logique de vos applications/sites
+</aside>
+
+---
+
+<h2 class="title chapter-title">Thanks</h2>
+
+---
+<h2 class="title chapter-title">Questions ?</h2>
+<aside class="notes">
+    TODO:
+    Comment l'authenticator resoud le challenge
+    détails des datas
+
+
+    https://dmitryfrank.com/articles/backup_u2f_token
+</aside>
+---
